@@ -1,0 +1,136 @@
+---
+title: "MMA 860 Cheat Sheet"
+author: "Stephanie Hosang"
+date: "August 13, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Load libraries
+```{r}
+library(tidyverse)
+library(readxl)
+library(sqldf)
+library(car)
+library(mice)
+library(estimatr)
+library(caret)
+library(ggplot2)
+library(corrplot)
+```
+Load dataset from excel
+```{r}
+ds <- read_excel(file.choose(),sheet = "")
+
+```
+Create basic regression
+```{r}
+mod <- lm(y ~ x1 + x2, data=ds)
+```
+
+Assessing data - Create plots
+```{r}
+par(mfrow=c(2,2))
+plot(mod)
+par(mfrow=c(1,1))
+plot(density(resid(mod)))
+```
+
+Boxplot - univariate outliers
+```{r}
+ds %>% ggplot(aes(y=Selling_Price)) + geom_boxplot()
+```
+
+Correlation Plot
+```{r}
+# Correlation between 2 variables
+cor(ds1$X1,class1$X2)
+
+# Correlation plot
+corrplot(cor(as.matrix(ds1)),)
+```
+
+
+Multiple Imputation
+```{r}
+md.pattern(ds)
+
+imputed_data <- mice(ds, m=5, maxit=30, meth='pmm', seed=1)
+summary(imputed_data)
+
+#the complete function will let you pick any single set of imputed data
+
+completed_data <- complete(imputed_data, 1)
+
+# pool imputed results
+reg1 <- with(imputed_data, lm(y ~ x1 + x2))
+summary(pool(reg1))
+```
+
+Joint Hypothesis Test
+```{r}
+Hypo_test <- linearHypothesis(reg, c("X1 = 0", "X2 = 0", "X3=0"))
+Hypo_test
+```
+
+Chow Test: Add dummies C0, C1, C2, C3
+```{r}
+reg2 <- lm(Y ~ X1 + X2 + X3 + c0 + c1 + c2 + c3, ds)
+
+summary(reg2)
+
+#Chow test 
+
+linearHypothesis(reg2, c("c0 = 0", "c1 = 0", "c2=0", "c3=0"))
+```
+
+Heteroskedasticity
+H0: No Heteroskedasticity
+```{r}
+ncvTest(reg) #Breusch-Pagan test
+
+
+# HCCME - if your data has greater than 250 observations you can use HC2
+rob_reg <- lm_robust(Y ~ X1 + X2, ds, se_type="HC3")
+
+summary(rob_reg)
+```
+
+heteroskedasticity-robust F-test
+
+```{r}
+linearHypothesis(model, c("x1=0", "x2=0"), white.adjust = "hc1")
+```
+
+
+Testing
+```{r}
+#break the file into test & train
+
+train <- head(ds, n=750)
+test <- tail(ds, n=250)
+
+# build model from train
+
+reg <- lm(Y ~ X1 + X2, train)
+summary(reg)
+plot(reg)
+
+#let's predict Y in test
+pred <- predict(reg,test)
+summary(pred)
+
+#test & train comparisons
+#Compare R^2 and RMSE. Want them to be relatively similar between test and train. 
+#If train is better, that means we overfitted the model.
+reg_test <- lm(Y ~ X1 + X2, test)
+summary(reg_test)
+plot(reg_test)
+```
+
+
+
+
