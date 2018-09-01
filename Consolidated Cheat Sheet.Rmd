@@ -129,6 +129,10 @@ summary(pred)
 reg_test <- lm(Y ~ X1 + X2, test)
 summary(reg_test)
 plot(reg_test)
+
+data.frame( R2 = R2(pred, test$Y),
+            RMSE = RMSE(pred, test$Y),
+            MAE = MAE(pred, test$Y))
 ```
 
 
