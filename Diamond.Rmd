@@ -1,0 +1,95 @@
+---
+title: "Diamond"
+author: "Stephanie Hosang"
+date: "August 31, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(readxl)
+library(sqldf)
+library(car)
+library(mice)
+library(estimatr)
+library(caret)
+library(ggplot2)
+library(corrplot)
+```
+
+Load dataset from excel
+Add dummies
+Split into test & train
+```{r}
+ds <- read_excel(file.choose(),sheet = "Raw Data", skip=2)
+
+ds <- ds %>% mutate(CutIdeal = ifelse(Cut=="Signature-Ideal",1,0),
+                    PolishnID = ifelse(Polish!="ID",1,0),
+                    SymnID = ifelse(Symmetry!="ID",1,0))
+
+train <- ds %>% filter(ID <= 5000)
+test <- ds %>% filter(ID >5000 & ID <= 6000)
+summary(train)
+str(train)
+```
+
+Model
+```{r}
+mod_linear <- lm(Price ~ `Carat Weight` + Cut + Color + Clarity + Polish + Symmetry + Report, data=train)
+summary(mod_linear)
+mod_loglinear <- lm(log(Price) ~ `Carat Weight` + Cut + Color + Clarity + Polish + Symmetry + Report, data=train)
+summary(mod_loglinear)
+mod_loglog <- lm(log(Price) ~ log(`Carat Weight`) + Cut + Color + Clarity + Polish + Symmetry + Report, data=train)
+summary(mod_loglog)
+```
+
+Linear Model
+```{r}
+linear <- lm(Price ~ `Carat Weight` + CutIdeal + Color + Clarity + Symmetry, data=train)
+summary(linear)
+
+linear_test <- lm(Price ~ `Carat Weight` + CutIdeal + Color + Clarity + Symmetry, data=test)
+summary(linear_test)
+
+pred <- predict(linear,test)
+
+data.frame( R2 = R2(pred, test$Price),
+            RMSE = RMSE(pred, test$Price),
+            MAE = MAE(pred, test$Price))
+```
+Log-Linear Model
+=> Overfit Model
+```{r}
+loglinear <- lm(log(Price) ~ `Carat Weight` + CutIdeal + Color + Clarity + Polish  , data=train)
+summary(loglinear)
+
+loglinear_test <- lm(log(Price) ~ `Carat Weight` + CutIdeal + Color + Clarity + Polish  , data=test)
+summary(loglinear_test)
+
+pred_loglinear <- predict(loglinear,test)
+
+data.frame( R2 = R2(pred_loglinear, test$Price),
+            RMSE = RMSE(pred_loglinear, test$Price),
+            MAE = MAE(pred_loglinear, test$Price))
+
+```
+Log-Log Model
+=> Overfit Model
+```{r}
+loglog <- lm(log(Price) ~ log(`Carat Weight`) + Cut + Color + Clarity, data=train)
+summary(loglog)
+
+loglog_test <- lm(log(Price) ~ log(`Carat Weight`) + Cut + Color + Clarity, data=test)
+summary(loglog_test)
+
+pred_loglog <- predict(loglog,test)
+
+data.frame( R2 = R2(pred_loglog, test$Price),
+            RMSE = RMSE(pred_loglog, test$Price),
+            MAE = MAE(pred_loglog, test$Price))
+
+```
