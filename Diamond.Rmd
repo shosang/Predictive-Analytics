@@ -62,7 +62,6 @@ data.frame( R2 = R2(pred, test$Price),
             MAE = MAE(pred, test$Price))
 ```
 Log-Linear Model
-=> Overfit Model
 ```{r}
 loglinear <- lm(log(Price) ~ `Carat Weight` + CutIdeal + Color + Clarity + Polish  , data=train)
 summary(loglinear)
@@ -78,7 +77,6 @@ data.frame( R2 = R2(pred_loglinear, test$Price),
 
 ```
 Log-Log Model
-=> Overfit Model
 ```{r}
 loglog <- lm(log(Price) ~ log(`Carat Weight`) + Cut + Color + Clarity, data=train)
 summary(loglog)
